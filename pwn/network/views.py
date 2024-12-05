@@ -9,7 +9,7 @@ class Register(APIView):
         network = data.get('ussid')
         password = data.get('password')
         
-        if not(Network.objects.filter(ussid=network)):
+        if not(Network.objects.filter(ussid=network).exists()):
             Network.objects.create(
                 name=user,
                 ussid=network,
