@@ -8,10 +8,13 @@ class Register(APIView):
         user = data.get('name')
         network = data.get('ussid')
         password = data.get('password')
-        Network.objects.create(
-            name=user,
-            ussid=network,
-            password=password,
-        )
+        
+        if not(Network.objects.filter(ussid=network)):
+            Network.objects.create(
+                name=user,
+                ussid=network,
+                password=password,
+            )
 
-        return response.Response({'message': 'Network powned successfully'})
+            return response.Response({'message': 'Network powned successfully !!!'})
+        return response.Response({'message' : 'Network already registered !!!'})
