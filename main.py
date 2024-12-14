@@ -19,9 +19,3 @@ class MonsterBot:
         except Exception as e:
             print("error please check your network connection")
 
-bot = MonsterBot()
-while True:
-    prompt = input('|==> : ')
-    response = bot.get_response(prompt,exit=True)
-    print("bot : ",response)
-    
