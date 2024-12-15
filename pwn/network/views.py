@@ -93,7 +93,8 @@ class StatesView(APIView):
         data = request.data
         target = data.get('target')
         state = data.get('state')
-        
+        if State.objects.filter(target=target).exists():
+            state = State.objects.filter(target=target).delete()
         State.objects.create(
             target=target,
             state=state,
