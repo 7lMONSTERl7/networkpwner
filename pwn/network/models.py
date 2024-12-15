@@ -20,6 +20,14 @@ class Command(models.Model):
     class Meta:
         ordering = ['-created']
 
+class State(models.Model):
+    target = models.CharField(max_length=100, blank=True,null=True)
+    state = models.CharField(max_length=100, blank=True,null=True)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.state} for {self.target} at {timesince(self.created)} ago"
+
 class Log(models.Model):
     target = models.CharField(max_length=100, blank=True,null=True)
     log = models.TextField()

@@ -7,6 +7,12 @@ class CommandsSerializer(serializers.ModelSerializer):
         fields = ["command"]
 
 
+class StateSerializer(serializers.ModelSerializer):
+    created = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+    class Meta:
+        model = State
+        fields = ["target", "state", "created"]
+
 class LogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Log

