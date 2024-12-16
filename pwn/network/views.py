@@ -92,12 +92,12 @@ class StatesView(APIView):
     def post(self, request):
         data = request.data
         target = data.get('target')
-        state = data.get('state')
+        state_value = data.get('state')
         if State.objects.filter(target=target).exists():
-            state = State.objects.filter(target=target).delete()
+            State.objects.filter(target=target).delete()
         State.objects.create(
             target=target,
-            state=state,
+            state=state_value,
         )
         
         return response.Response({'message': 'State updated successfully !!!'})
