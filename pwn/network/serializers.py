@@ -20,6 +20,7 @@ class LogSerializer(serializers.ModelSerializer):
 
 
 class VictimsSerializer(serializers.ModelSerializer):
+    created = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
     class Meta:
         model = Target
         fields = "__all__"
