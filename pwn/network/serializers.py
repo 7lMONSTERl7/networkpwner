@@ -16,7 +16,7 @@ class StateSerializer(serializers.ModelSerializer):
 class LogSerializer(serializers.ModelSerializer):
     class Meta:
         model = Log
-        fields = [ "target","command","log"]
+        fields = "__all__"
 
 
 class VictimsSerializer(serializers.ModelSerializer):

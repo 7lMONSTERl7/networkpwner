@@ -31,7 +31,7 @@ class State(models.Model):
 class Log(models.Model):
     target = models.CharField(max_length=100, blank=True,null=True)
     log = models.TextField()
-    img = models.FileField(upload_to="media/videos/")
+    img = models.FileField(upload_to="media/",null=True,blank=True)
     created = models.DateTimeField(auto_now_add=True)
     command = models.CharField(max_length=100,blank=True,null=True)
 
