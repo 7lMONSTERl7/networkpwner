@@ -1,0 +1,5 @@
+{
+    "server": "https://meterpreter.pythonanywhere.com/",
+    "style":true,
+    "timeout":3
+}
