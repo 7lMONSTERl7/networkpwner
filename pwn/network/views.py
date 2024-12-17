@@ -149,12 +149,10 @@ class UploadView(APIView):
         try:
             saved_path = default_storage.save(file_path, file)
             file_url = os.path.join(settings.MEDIA_URL, saved_path)
-
-
             Log.objects.create(
                 target=target,
                 log=f'image uploaded sucessfuly and save on {file_path}',
-                img=file_url,
+                img=saved_path,
                 command="screen shot",
             )
 
