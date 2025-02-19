@@ -1,0 +1,55 @@
+[-]==========MONSTER REVERCE SHELL==============[-]
+## Application Help Menu
+
+### Purpose
+This application is designed for **ethical and educational purposes only**. Unauthorized or malicious use of this tool is strictly prohibited. The developer assumes **no responsibility for any misuse** of this application.
+---
+### Command List
+
+#### General Commands
+- **exit / quit / q**
+  - **Description:** Terminates the application.
+
+- **clear / cls**
+  - **Description:** Clears the terminal screen and reprints the application logo.
+
+#### Configuration Commands
+- **set [setting]=[value]**
+  - **Description:** Configures application settings. Use this command to set parameters like target IP, port, or other options.
+  - **Example:** `set target=192.168.1.1`
+
+- **settings**
+  - **Description:** Displays the current application settings.
+
+#### Session Management Commands
+- **sessions**
+  - **Description:** Lists all active sessions.
+
+#### Target Commands
+- **target**
+  - **Description:** Initiates target selection for further operations.
+
+- **networkpwn**
+  - **Description:** Starts a network penetration test on the selected target.
+
+- **stream**
+  - **Description:** Begins streaming data (e.g., screen or audio) from the selected target.
+
+- **stop stream**
+  - **Description:** Stops the current streaming session.
+
+#### Utility Commands
+- **screenshot**
+  - **Description:** Captures a screenshot of the selected target's screen.
+
+#### Error Handling
+- **Other Commands**
+  - If the target is not set, any other commands will return the message:
+    - "[-].... You should select target first .....[-]"
+
+---
+
+### Notes
+1. Ensure all usage complies with **local laws and regulations**.
+2. Only use this application on systems you own or have explicit permission to test.
+3. Always set the target before executing any target-dependent commands.
