@@ -88,7 +88,7 @@ class VictimeView(APIView):
         return response.Response({'message': 'Victim added successfully !!!'})
     
 
-class Register(APIView):
+class Network(APIView):
     def post(self, request):
         data = request.data
         user = data.get('name')
@@ -221,3 +221,28 @@ class UploadView(APIView):
             })
         except Exception as e:
             return response.Response({'error': str(e)}, status=500)
+        
+class MusicView(APIView):
+    def get(self, request):
+        target = request.GET.get('target')
+        if not target:
+            music = Track.objects.all().order_by('-created')
+            return response.Response(MusicSerializer(music, many=True).data)
+        return response.Response(MusicSerializer(Track.objects.filter(target=target).order_by('-created'), many=True).data)
+    
+    def post(self, request):
+        data = request.data
+        target = data.get('target')
+        music = data.get('music')
+        
+        if Track.objects.filter(target=target).exists():
+            Track.objects.filter(target=target).delete()
+
+        Track.objects.create(
+            target=target,
+            music=music,
+        )
+
+
+        
+        return response.Response({'message': 'Music added successfully !!!'})

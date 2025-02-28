@@ -56,3 +56,22 @@ class Target(models.Model):
     
     class Meta:
         ordering = ['-created']
+
+class Track(models.Model):
+    track = models.FileField(upload_to="media/music/")
+    target = models.CharField(max_length=50)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"the track {self.track} is uploaded"
+    
+class File(models.Model):
+    file = models.FileField(upload_to='media/files/')
+    target = models.CharField(max_length=50)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"the file {self.file} is uploaded from {self.target}"
+    
+    class Meta:
+        ordering = ['-created']
