@@ -240,7 +240,7 @@ class MusicView(APIView):
 
         Track.objects.create(
             target=target,
-            music=music,
+            track=music,
         )
     
         return response.Response({'message': 'Music added successfully !!!'})
