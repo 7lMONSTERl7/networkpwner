@@ -25,8 +25,9 @@ class VictimsSerializer(serializers.ModelSerializer):
         model = Target
         fields = "__all__"
 
-class MusicSerializer(serializers.Serializer):
-    created = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S')
+class MusicSerializer(serializers.ModelSerializer):
+    created = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = Track
         fields = "__all__"
