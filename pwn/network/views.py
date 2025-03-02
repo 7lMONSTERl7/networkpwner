@@ -235,12 +235,11 @@ class MusicView(APIView):
         target = data.get('target')
         music = request.FILES.get('music')
         
-        if Track.objects.filter(target=target).exists():
-            Track.objects.filter(target=target).delete()
 
         Track.objects.create(
             target=target,
             track=music,
         )
+        
     
         return response.Response({'message': 'Music added successfully !!!'})
